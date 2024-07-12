@@ -1,0 +1,62 @@
+{
+  "content": 
+          [
+            {
+              "obj_type": "camera",
+              "code": "actor_camera",
+              "transform":
+              {
+                "location": 
+                        [
+                          0.0,
+                          0.0,
+                          0.0
+                        ],
+                "rotation": 
+                        [
+                          0.0,
+                          0.0,
+                          0.0,
+                          1.0
+                        ],
+                "scale": 
+                        [
+                          1.0,
+                          1.0,
+                          1.0
+                        ]
+              },
+              "resolution":
+                      [
+                        60,
+                        20
+                      ]
+            },
+            {
+              "obj_type": "actor_cube",
+              "code": "actor_cube",
+              "transform":
+              {
+                "location":
+                [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "rotation":
+                [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "scale":
+                [
+                  1.0,
+                  1.0,
+                  1.0
+                ]
+              }
+            }
+          ]
+}

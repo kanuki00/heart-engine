@@ -3,6 +3,8 @@ import random
 import math
 import datetime as dt
 from datetime import datetime
+import json
+
 # Konsole complete zoom out perfect square is 4x7
 
 ## CLASSES
@@ -21,8 +23,8 @@ class res:
 nprgb = rgb()
 home = "\033[H"
 screensize = res(60, 20)
-game_tick = 0
 exe_time_limit = 10
+game_modules = []
 
 ## FUNCS ##
 def set_nprgb(new_r, new_g, new_b):
@@ -59,11 +61,22 @@ def randcolorframe():
 
 ## MAIN ##
 def main():
-    starttime = datetime.now()
-    while datetime.now() - starttime < dt.timedelta(seconds=exe_time_limit):
+    global game_modules
+    args = sys.argv[1:]
+    with open(args[0]+"/world1.json") as worldfile:
+        wdata = json.load(worldfile)
+        for obj in wdata["content"]:
+            if obj["code"] != None:
+                path = args[0]+"."+obj["code"]
+                game_modules.append(__import__(path, globals(), locals(), [obj["code"]], 0))
+            
+        starttime = datetime.now()
+        while datetime.now() - starttime < dt.timedelta(seconds=exe_time_limit):
+            sys.stdout.write(home)
+            randcolorframe()
+            for m in game_modules:
+                m.gameobj.tick()
         sys.stdout.write(home)
-        randcolorframe()
-    sys.stdout.write(home)
 
 if __name__ == "__main__":
     exit(main())
