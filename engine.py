@@ -1,5 +1,8 @@
+import sys
 import random
 import math
+import datetime as dt
+from datetime import datetime
 # Konsole complete zoom out perfect square is 4x7
 
 ## CLASSES
@@ -18,6 +21,8 @@ class res:
 nprgb = rgb()
 home = "\033[H"
 screensize = res(60, 20)
+game_tick = 0
+exe_time_limit = 10
 
 ## FUNCS ##
 def set_nprgb(new_r, new_g, new_b):
@@ -41,7 +46,7 @@ def solidcolorframe(new_r, new_g, new_b):
         line = ""
         for j in range(screensize.width):
             line += "A"
-        print("%s%s" % (rgbcode(), line))
+        sys.stdout.write("%s%s\n" % (rgbcode(), line))
         
 def randcolorframe():
     global screensize
@@ -50,19 +55,15 @@ def randcolorframe():
         for j in range(screensize.width):
             set_nprgb(rand255(),rand255(),rand255())
             line += rgbcode()+"A"
-        print("%s" % (line))    
+        sys.stdout.write("%s\n" % (line))    
 
 ## MAIN ##
-input()
-print(home)
-solidcolorframe(255,255,255)
+def main():
+    starttime = datetime.now()
+    while datetime.now() - starttime < dt.timedelta(seconds=exe_time_limit):
+        sys.stdout.write(home)
+        randcolorframe()
+    sys.stdout.write(home)
 
-input()
-print(home)
-solidcolorframe(0,0,0)
-
-input()
-print(home)
-randcolorframe()
-
-input()
+if __name__ == "__main__":
+    exit(main())
