@@ -25,6 +25,9 @@ class vector3:
     def __sub__(self, o):
         res = self.asnp() - o.asnp()
         return vector3(res[0], res[1], res[2])
+    def maprgb(self):
+        # clamping with np.clip because color will always be 0 if r, g or b is negative
+        return vector3(np.clip(0, self.x*255, 255), np.clip(0, self.y*255, 255), np.clip(0, self.z*255, 255))
     def print(self):
         print("X=%f, Y=%f, Z=%f" % (self.x, self.y, self.z))
     def as2D(self):
@@ -50,6 +53,12 @@ class triangle:
         ac = c2D - a2D
         cross = mcross(ab, ac)
         return abs(mlength(cross) / 2)
+    def normal(self):
+        ab = self.b - self.a
+        ac = self.c - self.a
+        cross = mcross(ab, ac)
+        return mnormalized(cross)
+        
         
 class rgb:
     def __init__(self):
@@ -73,7 +82,7 @@ class transform:
 
 class gameobj_def:
     def __init__(self):
-        self.transform = None
+        self.transform = transform
         
 ## VECTORMATH
 def mcross(a, b):
@@ -90,6 +99,30 @@ def mlength(v):
         raise Exceptrion("v is not a vector3")
     npa = v.asnp()
     return np.linalg.norm(npa, ord=1)
+    
+def mnormalized(v):
+    if isinstance(v, vector3) == False:
+        raise Exceptrion("v is not a vector3")
+    npa = v.asnp()
+    len = np.linalg.norm(npa, ord=1)
+    res = npa/len
+    if len == 0:
+        return vector3(npa[0], npa[1], npa[2])
+    else:
+        return vector3(res[0], res[1], res[2])
+
+# TODO this needs to return the tri_a, b, c ratio so that we can get pixel depth in raster        
+def get_point_in_tri2D(point, tri):
+    tri_a = triangle(point, tri.a, tri.b)
+    tri_b = triangle(point, tri.b, tri.c)
+    tri_c = triangle(point, tri.c, tri.a)
+    comboarea = tri_a.area2D() + tri_b.area2D() + tri_c.area2D()
+    diff = tri.area2D() - comboarea
+    tol = 0.0001
+    if diff > -tol and diff < tol:
+        return True
+    else:
+        return False
 
 ## GLOBAL VARS ##
 nprgb = rgb()
@@ -99,11 +132,11 @@ exe_time_limit = 10
 game_modules = []
 
 ## FUNCS ##
-def set_nprgb(new_r, new_g, new_b):
+def set_nprgb(new_rgb):
     global nprgb
-    nprgb.r = new_r
-    nprgb.g = new_g
-    nprgb.b = new_b
+    nprgb.r = new_rgb.x
+    nprgb.g = new_rgb.y
+    nprgb.b = new_rgb.z
 
 def rgbcode():
     global nprgb
@@ -139,18 +172,17 @@ def rasterizeframe(triangles):
     canvas_size = vec2D(2., 2.)
     step_x = canvas_size[0] / screensize[0]
     step_y = canvas_size[1] / screensize[1]
-    for i in reversed(range(screensize[1])): # screensize Y
-        for j in range(screensize[0]): # screensize X
+    for i in reversed(range(screensize[1])):    # screensize Y
+        for j in range(screensize[0]):          # screensize X
             x = step_x*j-canvas_size[0]/2
             y = step_y*i-canvas_size[1]/2
-            depth = 0 # TODO
-            normal = vector3 # TODO
+            deepest = -10000000000 # TODO
             for k in triangles:
                 if get_point_in_tri2D(vector3(x, y, 0), k):
-                    set_nprgb(255, 255, 255)
+                    set_nprgb(k.normal().maprgb())
                     break
                 else:
-                    set_nprgb(0, 0, 0)
+                    set_nprgb(vector3(0, 0, 0))
             sys.stdout.write(rgbcode()+"A")
         sys.stdout.write("\n")
     sys.stdout.write("\033[0m") # reset colors so that any normal text after frame will be printed properly
@@ -162,24 +194,8 @@ def loadworld(dir, file):
         if obj["code"] != None:
             path = dir+"."+obj["code"]
             game_modules.append(__import__(path, globals(), locals(), [obj["code"]], 0))
-
-# def get_area(tri):
-#     ab = tri.b-tri.a
-#     ac = tri.c-tri.a
-#     cross = np.cross(ab, ac)
-#     return abs(cross/2)
     
-def get_point_in_tri2D(point, tri):
-    tri_a = triangle(point, tri.a, tri.b)
-    tri_b = triangle(point, tri.b, tri.c)
-    tri_c = triangle(point, tri.c, tri.a)
-    comboarea = tri_a.area2D() + tri_b.area2D() + tri_c.area2D()
-    diff = tri.area2D() - comboarea
-    tol = 0.0001
-    if diff > -tol and diff < tol:
-        return True
-    else:
-        return False
+
 
 ## MAIN ##
 def main():
@@ -195,11 +211,15 @@ def main():
             prev = datetime.now()
             while datetime.now() - starttime < dt.timedelta(seconds=exe_time_limit):
                 sys.stdout.write(home)
-                # ticking game objects 
+                # ticking game objects
                 for m in game_modules:
                     m.gameobj.tick()
                 # producing frame
-                rasterizeframe([triangle(vector3(0, 0.8, 0), vector3(-0.5, -0.2, 0), vector3(0.5, -0.2, 0)), triangle(vector3(-0.9, 0.2, 0), vector3(-1, -0.2, 0), vector3(-0.8, -0.2, 0))])
+                testtris = [
+                triangle(vector3(0, 0.4, 0.1), vector3(-0.1, -0.15, 0.15), vector3(0.6, 0, -0.3)),
+                triangle(vector3(0.2, 0.4, 0.1), vector3(-0.2, 0, -0.1), vector3(0.35, -0.3, 0))
+                ]
+                rasterizeframe(testtris)
                 # printing frametime    
                 sys.stdout.write(str((datetime.now() - prev)/dt.timedelta(milliseconds=1))+"ms\n")
                 prev = datetime.now()
@@ -231,3 +251,9 @@ if __name__ == "__main__":
     #    print(step_x*i)
     
     #mcross(vector3(1,0,0), vector3(0,2,0)).print()
+    #mnormalized(vector3(4, 1, 0)).print()
+#     testtris = [
+#     triangle(vector3(0, 0.4, 0.1), vector3(-0.1, -0.15, 0.15), vector3(0.6, 0, -0.3)),
+#     triangle(vector3(0.2, 0.4, 0.1), vector3(-0.2, 0, -0.1), vector3(0.35, -0.3, 0))
+#     ]
+#     testtris[0].normal().maprgb().print()
