@@ -58,7 +58,11 @@ class triangle:
         ac = self.c - self.a
         cross = mcross(ab, ac)
         return mnormalized(cross)
-        
+
+class bary_res:
+    def __init__(self, in_triangle, barycoord):
+        self.in_triangle = in_triangle
+        self.barycoord = barycoord
         
 class rgb:
     def __init__(self):
@@ -117,12 +121,13 @@ def get_point_in_tri2D(point, tri):
     tri_b = triangle(point, tri.b, tri.c)
     tri_c = triangle(point, tri.c, tri.a)
     comboarea = tri_a.area2D() + tri_b.area2D() + tri_c.area2D()
+    bary = vector3(tri_b.area2D()/tri.area2D(), tri_c.area2D()/tri.area2D(), tri_a.area2D()/tri.area2D())
     diff = tri.area2D() - comboarea
     tol = 0.0001
     if diff > -tol and diff < tol:
-        return True
+        return bary_res(True, bary)
     else:
-        return False
+        return bary_res(False, bary)
 
 ## GLOBAL VARS ##
 nprgb = rgb()
@@ -169,19 +174,24 @@ def randcolorframe():
 def rasterizeframe(triangles):
     global screensize
     sys.stdout.write(home)
-    canvas_size = vec2D(2., 2.)
+    canvas_size = vec2D(2., 1.5)
     step_x = canvas_size[0] / screensize[0]
     step_y = canvas_size[1] / screensize[1]
     for i in reversed(range(screensize[1])):    # screensize Y
         for j in range(screensize[0]):          # screensize X
             x = step_x*j-canvas_size[0]/2
             y = step_y*i-canvas_size[1]/2
-            deepest = -10000000000 # TODO
+            shallowest = -10000000000
+            was_drawn = False
             for k in triangles:
-                if get_point_in_tri2D(vector3(x, y, 0), k):
-                    set_nprgb(k.normal().maprgb())
-                    break
-                else:
+                result = get_point_in_tri2D(vector3(x, y, 0), k)
+                if result.in_triangle:
+                    depth = k.a.z*result.barycoord.x + k.b.z*result.barycoord.y + k.c.z*result.barycoord.z
+                    if depth > shallowest:
+                        shallowest = depth
+                        set_nprgb(k.normal().maprgb())
+                        was_drawn = True
+                elif was_drawn == False:
                     set_nprgb(vector3(0, 0, 0))
             sys.stdout.write(rgbcode()+"A")
         sys.stdout.write("\n")
@@ -256,4 +266,4 @@ if __name__ == "__main__":
 #     triangle(vector3(0, 0.4, 0.1), vector3(-0.1, -0.15, 0.15), vector3(0.6, 0, -0.3)),
 #     triangle(vector3(0.2, 0.4, 0.1), vector3(-0.2, 0, -0.1), vector3(0.35, -0.3, 0))
 #     ]
-#     testtris[0].normal().maprgb().print()
+#     rasterizeframe(testtris)
