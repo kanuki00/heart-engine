@@ -25,6 +25,10 @@ class vector3:
     def __sub__(self, o):
         res = self.asnp() - o.asnp()
         return vector3(res[0], res[1], res[2])
+    def __mul__(self, other):
+        return vector3(self.x*other, self.y*other, self.z*other)
+    def __add__(self, other):
+        return vector3(self.x+other.x, self.y+other.y, self.z+other.z)
     def maprgb(self):
         # clamping with np.clip because color will always be 0 if r, g or b is negative
         return vector3(np.clip(0, self.x*255, 255), np.clip(0, self.y*255, 255), np.clip(0, self.z*255, 255))
@@ -114,8 +118,12 @@ def mnormalized(v):
         return vector3(npa[0], npa[1], npa[2])
     else:
         return vector3(res[0], res[1], res[2])
-
-# TODO this needs to return the tri_a, b, c ratio so that we can get pixel depth in raster        
+        
+def mdotproduct(a, b):
+    if isinstance(a, vector3) == False or isinstance(b, vector3) == False:
+        raise Exception("a or b was not a vector3")
+    return a.x*b.x + a.y*b.y + a.z*b.z
+  
 def get_point_in_tri2D(point, tri):
     tri_a = triangle(point, tri.a, tri.b)
     tri_b = triangle(point, tri.b, tri.c)
@@ -128,6 +136,18 @@ def get_point_in_tri2D(point, tri):
         return bary_res(True, bary)
     else:
         return bary_res(False, bary)
+
+# TODO        
+def line_plane_intersect(line_start, line_end, plane_point, plane_normal):
+    epsilon = 0.0001
+    w = line_end - plane_point
+    u = line_end - line_start
+    dot1 = mdotproduct(u, plane_normal)
+    dot2 = mdotproduct(plane_normal, w)
+    if dot1 > -epsilon and dot1 < epsilon:
+        return None
+    f = dot2/dot1
+    return (u*-f)+line_end
 
 ## GLOBAL VARS ##
 nprgb = rgb()
@@ -267,3 +287,8 @@ if __name__ == "__main__":
 #     triangle(vector3(0.2, 0.4, 0.1), vector3(-0.2, 0, -0.1), vector3(0.35, -0.3, 0))
 #     ]
 #     rasterizeframe(testtris)
+#     p1 = vector3(-3.09749, 0.61573, 2.01537)
+#     p2 = vector3(-0.442901, -0.968565, 6.14963)
+#     p_co = vector3(-1.26795, -1.05232, 3.1233)
+#     p_n = vector3(0.427481, -1.60776, 2.27372)
+#     line_plane_intersect(p1, p2, p_co, p_n).print()
