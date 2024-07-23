@@ -27,6 +27,8 @@ class vector3:
         return vector3(res[0], res[1], res[2])
     def __mul__(self, other):
         return vector3(self.x*other, self.y*other, self.z*other)
+    def __truediv__(self, other):
+        return vector3(self.x/other, self.y/other, self.z/other)
     def __add__(self, other):
         return vector3(self.x+other.x, self.y+other.y, self.z+other.z)
     def maprgb(self):
@@ -104,20 +106,13 @@ def mcross(a, b):
 
 def mlength(v):
     if isinstance(v, vector3) == False:
-        raise Exceptrion("v is not a vector3")
-    npa = v.asnp()
-    return np.linalg.norm(npa, ord=1)
+        raise Exception("v is not a vector3")
+    return math.sqrt(mdotproduct(v, v))
     
 def mnormalized(v):
     if isinstance(v, vector3) == False:
-        raise Exceptrion("v is not a vector3")
-    npa = v.asnp()
-    len = np.linalg.norm(npa, ord=1)
-    res = npa/len
-    if len == 0:
-        return vector3(npa[0], npa[1], npa[2])
-    else:
-        return vector3(res[0], res[1], res[2])
+        raise Exception("v is not a vector3")
+    return v/mlength(v)
         
 def mdotproduct(a, b):
     if isinstance(a, vector3) == False or isinstance(b, vector3) == False:
@@ -136,8 +131,7 @@ def get_point_in_tri2D(point, tri):
         return bary_res(True, bary)
     else:
         return bary_res(False, bary)
-
-# TODO        
+     
 def line_plane_intersect(line_start, line_end, plane_point, plane_normal):
     epsilon = 0.0001
     w = line_end - plane_point
@@ -148,6 +142,49 @@ def line_plane_intersect(line_start, line_end, plane_point, plane_normal):
         return None
     f = dot2/dot1
     return (u*-f)+line_end
+    
+def safedivide(a, b):
+    if b == 0:
+        return a
+    return a/b
+    
+def project_vec3_vec3(dest, source):
+    d = mdotproduct(dest, source)
+    f = d / mlength(dest)
+    return mnormalized(dest)*f
+    
+def pp_helper(right, up, proj, plane_loc, ogvert, cam_loc):
+    to_p = proj-plane_loc
+    xdot = mdotproduct(right, proj)
+    xsign = safedivide(xdot, abs(xdot))
+    x = mlength(project_vec3_vec3(right, to_p))/mlength(right) * xsign
+    ydot = mdotproduct(up, proj)
+    ysign = safedivide(ydot, abs(ydot))
+    y = mlength(project_vec3_vec3(up, to_p))/mlength(up) * ysign
+    z = -mlength(ogvert-cam_loc)
+    return vector3(x, y, z)
+
+def perspective_project(camera, triangles):
+    cam_loc = vector3(2.8, -4.6, 2) # placeholder
+    cam_plane_normal = vector3(-0.48878, 0.797416, -0.353874) # placeholder
+    cam_plane_loc = cam_loc + cam_plane_normal * 5
+    cam_right_vec = mnormalized(mcross(cam_plane_normal, vector3(0,0,1)))
+    cam_up_vec = mcross(cam_right_vec, cam_plane_normal)
+    result = []
+    for tri in triangles:
+        result_tri = triangle(vector3(0,0,0), vector3(0,0,0), vector3(0,0,0))
+        proj_a = line_plane_intersect(tri.a, cam_loc, cam_plane_loc, cam_plane_normal)
+        proj_b = line_plane_intersect(tri.b, cam_loc, cam_plane_loc, cam_plane_normal)
+        proj_c = line_plane_intersect(tri.c, cam_loc, cam_plane_loc, cam_plane_normal)
+#         a_x = mlength(project_vec3_vec3(cam_right_vec, proj_a-cam_plane_loc))/mlength(cam_right_vec)
+#         a_y = mlength(project_vec3_vec3(cam_up_vec, proj_a-cam_plane_loc))/mlength(cam_up_vec)
+#         a_z = -mlength(tri.a-cam_loc)
+#         result_tri.a = vector3(a_x, a_y, a_z)
+        result_tri.a = pp_helper(cam_right_vec, cam_up_vec, proj_a, cam_plane_loc, tri.a, cam_loc)
+        result_tri.b = pp_helper(cam_right_vec, cam_up_vec, proj_b, cam_plane_loc, tri.b, cam_loc)
+        result_tri.c = pp_helper(cam_right_vec, cam_up_vec, proj_c, cam_plane_loc, tri.c, cam_loc)
+        result.append(result_tri)
+    return result
 
 ## GLOBAL VARS ##
 nprgb = rgb()
@@ -191,7 +228,7 @@ def randcolorframe():
         sys.stdout.write("%s\n" % (line))    
     sys.stdout.write("\033[0m")
     
-def rasterizeframe(triangles):
+def rasterizeframe(proj_tris, tris):
     global screensize
     sys.stdout.write(home)
     canvas_size = vec2D(2., 1.5)
@@ -203,16 +240,18 @@ def rasterizeframe(triangles):
             y = step_y*i-canvas_size[1]/2
             shallowest = -10000000000
             was_drawn = False
-            for k in triangles:
-                result = get_point_in_tri2D(vector3(x, y, 0), k)
+            for k in range(len(proj_tris)):
+                ptri = proj_tris[k]
+                tri = tris[k]
+                result = get_point_in_tri2D(vector3(x, y, 0), ptri)
                 if result.in_triangle:
-                    depth = k.a.z*result.barycoord.x + k.b.z*result.barycoord.y + k.c.z*result.barycoord.z
+                    depth = ptri.a.z*result.barycoord.x + ptri.b.z*result.barycoord.y + ptri.c.z*result.barycoord.z
                     if depth > shallowest:
                         shallowest = depth
-                        set_nprgb(k.normal().maprgb())
+                        set_nprgb(tri.normal().maprgb())
                         was_drawn = True
                 elif was_drawn == False:
-                    set_nprgb(vector3(0, 0, 0))
+                    set_nprgb(vector3(60, 60, 60))
             sys.stdout.write(rgbcode()+"A")
         sys.stdout.write("\n")
     sys.stdout.write("\033[0m") # reset colors so that any normal text after frame will be printed properly
@@ -225,7 +264,17 @@ def loadworld(dir, file):
             path = dir+"."+obj["code"]
             game_modules.append(__import__(path, globals(), locals(), [obj["code"]], 0))
     
-
+def loadmeshjson(file):
+    with open(file) as meshfile:
+        raw_data = json.load(meshfile)
+        result = []
+        for tri in raw_data["Triangles"]:
+            a = tri["A"]
+            b = tri["B"]
+            c = tri["C"]
+            r_tri = triangle(vector3(a[0], a[1], a[2]), vector3(b[0], b[1], b[2]), vector3(c[0], c[1], c[2]))
+            result.append(r_tri)
+        return result
 
 ## MAIN ##
 def main():
@@ -245,11 +294,13 @@ def main():
                 for m in game_modules:
                     m.gameobj.tick()
                 # producing frame
-                testtris = [
-                triangle(vector3(0, 0.4, 0.1), vector3(-0.1, -0.15, 0.15), vector3(0.6, 0, -0.3)),
-                triangle(vector3(0.2, 0.4, 0.1), vector3(-0.2, 0, -0.1), vector3(0.35, -0.3, 0))
-                ]
-                rasterizeframe(testtris)
+#                 tris = [
+#                 triangle(vector3(0.5, -0.5, 0.5), vector3(-0.5, -0.5, -0.5), vector3(0.5, -0.5, -0.5)),
+#                 triangle(vector3(0.5, 0.5, 0.5), vector3(0.5, -0.5, -0.5), vector3(0.5, 0.5, -0.5))
+#                 ]
+                tris = loadmeshjson("game1/cube_mesh.json")
+                projectedtris = perspective_project(None, tris)
+                rasterizeframe(projectedtris, tris)
                 # printing frametime    
                 sys.stdout.write(str((datetime.now() - prev)/dt.timedelta(milliseconds=1))+"ms\n")
                 prev = datetime.now()
@@ -292,3 +343,13 @@ if __name__ == "__main__":
 #     p_co = vector3(-1.26795, -1.05232, 3.1233)
 #     p_n = vector3(0.427481, -1.60776, 2.27372)
 #     line_plane_intersect(p1, p2, p_co, p_n).print()
+#     v1 = vector3(-1.6118, 0.78488, 0.865926)
+#     v2 = vector3(-0.761052, -0.066383, 1.05817)
+#     project_vec3_vec3(v1, v2).print()
+#     persp_tris = perspective_project(None, testtris)
+#     print(testtris)
+#     print(persp_tris)
+#     v1 = vector3(-1.6, 0.78, 0.86)
+#     v2 = vector3(-0.76, -0.06, 1.05)
+#     mcross(v1, v2).print()
+    #print(loadmeshjson("game1/cube_mesh.json"))
