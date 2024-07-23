@@ -294,10 +294,10 @@ def main():
                 for m in game_modules:
                     m.gameobj.tick()
                 # producing frame
-#                 tris = [
-#                 triangle(vector3(0.5, -0.5, 0.5), vector3(-0.5, -0.5, -0.5), vector3(0.5, -0.5, -0.5)),
-#                 triangle(vector3(0.5, 0.5, 0.5), vector3(0.5, -0.5, -0.5), vector3(0.5, 0.5, -0.5))
-#                 ]
+                testtris = [
+                     triangle(vector3(0, 0.4, 0.1), vector3(-0.1, -0.15, 0.15), vector3(0.6, 0, -0.3)),
+                     triangle(vector3(0.2, 0.4, 0.1), vector3(-0.2, 0, -0.1), vector3(0.35, -0.3, 0))
+                     ]
                 tris = loadmeshjson("weird_mesh.json")
                 projectedtris = perspective_project(None, tris)
                 rasterizeframe(projectedtris, tris)
