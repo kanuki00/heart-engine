@@ -167,7 +167,7 @@ def pp_helper(right, up, proj, plane_loc, ogvert, cam_loc):
 def perspective_project(camera, triangles):
     cam_loc = vector3(2.8, -4.6, 2) # placeholder
     cam_plane_normal = vector3(-0.48878, 0.797416, -0.353874) # placeholder
-    cam_plane_loc = cam_loc + cam_plane_normal * 5
+    cam_plane_loc = cam_loc + cam_plane_normal * 4
     cam_right_vec = mnormalized(mcross(cam_plane_normal, vector3(0,0,1)))
     cam_up_vec = mcross(cam_right_vec, cam_plane_normal)
     result = []
@@ -189,8 +189,8 @@ def perspective_project(camera, triangles):
 ## GLOBAL VARS ##
 nprgb = rgb()
 home = "\033[H"
-screensize = vec2D(60, 20)
-exe_time_limit = 10
+screensize = vec2D(100, 40)
+exe_time_limit = 20
 game_modules = []
 
 ## FUNCS ##
@@ -298,7 +298,7 @@ def main():
 #                 triangle(vector3(0.5, -0.5, 0.5), vector3(-0.5, -0.5, -0.5), vector3(0.5, -0.5, -0.5)),
 #                 triangle(vector3(0.5, 0.5, 0.5), vector3(0.5, -0.5, -0.5), vector3(0.5, 0.5, -0.5))
 #                 ]
-                tris = loadmeshjson("game1/cube_mesh.json")
+                tris = loadmeshjson("weird_mesh.json")
                 projectedtris = perspective_project(None, tris)
                 rasterizeframe(projectedtris, tris)
                 # printing frametime    
