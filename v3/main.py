@@ -25,8 +25,8 @@ def loadmeshjson(file):
 
 def make_pixel_list(resolution):
     result = []
-    for x in range(resolution.x):
-        for y in range(resolution.y):
+    for y in range(resolution.y):
+        for x in range(resolution.x):
             result.append(et.vector3(x, y, 0))
     return result
 
@@ -72,11 +72,11 @@ def rasterize_pixel(frame_buffer, in_pixel, render_resolution, in_proj_triangles
 def render_frame(frame_buffer, render_resolution, pixel_list, tris):
     start = default_timer()
     # Step 1: perspective projection
-    persp_proj_tris = et.perspective_project(None, tris)
+    persp_proj_tris = et.perspective_project_v1(None, tris) # TODO
     # Step 2: getting projected triangle's bounding boxes
     ppt_bounds = get_bounds(persp_proj_tris)
     # Step 3: rasterize pixel and write it into frame buffer
-    for i in range(len(pixel_list)):
+    for i in range(0, len(pixel_list), 1):
         pixel = pixel_list[i]
         rasterize_pixel(frame_buffer, pixel, render_resolution, persp_proj_tris, tris, ppt_bounds)
     # Step 4: draw the frame buffer to the screen
@@ -89,9 +89,16 @@ def main():
     start = default_timer()
     plist = make_pixel_list(rres)
     scene_triangles = loadmeshjson("mesh.json")
+    rotation = et.quaternion(0, 0, 0, 1)
     #scene_camera TODO
     while default_timer() - start < exetime:
-        render_frame(fbuffer, rres, plist, scene_triangles)
+        rotated_s_triangles = []
+        for i in range(len(scene_triangles)):
+            tri = scene_triangles[i]
+            rotated_s_triangles.append(et.rotate_tri(tri, rotation))
+        rotation = rotation*et.normalized(et.quaternion(0,0,0.1,1))
+        rotation = et.normalized(rotation)
+        render_frame(fbuffer, rres, plist, rotated_s_triangles)
     ed.home()
 
 

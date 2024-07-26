@@ -23,6 +23,27 @@ class vector3:
         return "x: %f, y: %f, z: %f" % (self.x, self.y, self.z)
 
 
+class quaternion:
+    def __init__(self, in_x, in_y, in_z, in_w):
+        self.x = in_x
+        self.y = in_y
+        self.z = in_z
+        self.w = in_w
+
+    def __mul__(self, other):
+        w = self.w * other.w - self.x * other.x - self.y * other.y - self.z * other.z
+        x = self.w * other.x + self.x * other.w + self.y * other.z - self.z * other.y
+        y = self.w * other.y - self.x * other.z + self.y * other.w + self.z * other.x
+        z = self.w * other.z + self.x * other.y - self.y * other.x + self.z * other.w
+        return quaternion(x, y, z, w)
+    def __truediv__(self, other):
+        x = self.x/other
+        y = self.y/other
+        z = self.z/other
+        w = self.w/other
+        return quaternion(x, y, z, w)
+
+
 class triangle:
     normal = vector3(0, 0, 0)
 
@@ -56,7 +77,10 @@ def cross(v1, v2):
 
 
 def dot(v1, v2):
-    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
+    if isinstance(v1, vector3) and isinstance(v2, vector3):
+        return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
+    if isinstance(v1, quaternion) and isinstance(v2, quaternion):
+        return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w
 
 
 def vector_length(v):
@@ -66,11 +90,27 @@ def vector_length(v):
 def normalized(v):
     return v / vector_length(v)
 
+
+def rotate(v, q):
+    r = vector3(q.x, q.y, q.z)
+    s = q.w
+    m = math.pow(q.x, 2) + math.pow(q.y, 2) + math.pow(q.z, 2) + math.pow(q.w, 2)
+    return v + cross(r * 2, (v * s + cross(r, v)) / m)
+
+
+def rotate_tri(tri, q):
+    a = rotate(tri.a, q)
+    b = rotate(tri.b, q)
+    c = rotate(tri.c, q)
+    return triangle(a, b, c)
+
+
 def vec3_to_rgb(v):
     r = max(v.x * 255, 0)
     g = max(v.y * 255, 0)
     b = max(v.z * 255, 0)
     return vector3(r, g, b)
+
 
 def bary_coords(point, tri):
     try:
@@ -78,7 +118,7 @@ def bary_coords(point, tri):
         v = tri_area_fast(triangle(point, tri.c, tri.a)) / tri_area_fast(tri)
         w = tri_area_fast(triangle(point, tri.a, tri.b)) / tri_area_fast(tri)
     except ZeroDivisionError:
-        return vector3(0.333, 0.333, 0.333)
+        return vector3(0.333, 0.333, 0.334)
     return vector3(u, v, w)
 
 
@@ -166,7 +206,7 @@ def pp_helper(right, up, proj, plane_loc, ogvert, cam_loc):
     return vector3(x, y, z)
 
 
-def perspective_project(camera, triangles):  # TODO camera
+def perspective_project_v1(camera, triangles):  # TODO camera
     cam_loc = vector3(2.8, -4.6, 2)  # placeholder
     cam_plane_normal = vector3(-0.48878, 0.797416, -0.353874)  # placeholder
     cam_plane_loc = cam_loc + cam_plane_normal * 4
@@ -182,4 +222,17 @@ def perspective_project(camera, triangles):  # TODO camera
         result_tri.b = pp_helper(cam_right_vec, cam_up_vec, proj_b, cam_plane_loc, tri.b, cam_loc)
         result_tri.c = pp_helper(cam_right_vec, cam_up_vec, proj_c, cam_plane_loc, tri.c, cam_loc)
         result.append(result_tri)
+    return result
+
+
+def perspective_project_v2(camera, triangles):  # TODO
+    result = []
+    for tri in triangles:
+        tri_vert_list = [tri.a, tri.b, tri.c]
+        rtvl = []
+        for vert in tri_vert_list:
+            # do projections
+            proj_vert = vert
+            rtvl.append(proj_vert)
+        result.append(triangle(rtvl[0], rtvl[1], rtvl[2]))
     return result
