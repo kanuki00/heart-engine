@@ -55,12 +55,26 @@ class triangle:
     def compute_normal(self):
         ab = self.b - self.a
         ac = self.c - self.a
-        self.normal = normalized(cross(ab, ac))
-        return self.normal
+        return normalized(cross(ab, ac))
 
     def to_string(self):
         return "Triangle\nA: Vector3 %s\nB: Vector3 %s\nC: Vector3 %s" % (
             self.a.to_string(), self.b.to_string(), self.c.to_string())
+
+
+class camera:
+    def __init__(self, in_loc, in_rot):
+        self.loc = in_loc
+        self.rot = in_rot
+
+    def forward_vec(self):
+        return rotate(vector3(0, 0, -1), normalized(self.rot))
+
+    def up_vec(self):
+        return rotate(vector3(0, 1, 0), normalized(self.rot))
+
+    def right_vec(self):
+        return rotate(vector3(1, 0, 0), normalized(self.rot))
 
 
 class bounds:
@@ -207,20 +221,19 @@ def pp_helper(right, up, proj, plane_loc, ogvert, cam_loc):
 
 
 def perspective_project_v1(camera, triangles):  # TODO camera
-    cam_loc = vector3(2.8, -4.6, 2)  # placeholder
-    cam_plane_normal = vector3(-0.48878, 0.797416, -0.353874)  # placeholder
-    cam_plane_loc = cam_loc + cam_plane_normal * 4
-    cam_right_vec = normalized(cross(cam_plane_normal, vector3(0, 0, 1)))
-    cam_up_vec = cross(cam_right_vec, cam_plane_normal)
+    cam_plane_normal = camera.forward_vec()
+    cam_plane_loc = camera.loc + cam_plane_normal * 4
+    cam_right_vec = camera.right_vec()
+    cam_up_vec = camera.up_vec()
     result = []
     for tri in triangles:
         result_tri = triangle(vector3(0, 0, 0), vector3(0, 0, 0), vector3(0, 0, 0))
-        proj_a = line_plane_intersect(tri.a, cam_loc, cam_plane_loc, cam_plane_normal)
-        proj_b = line_plane_intersect(tri.b, cam_loc, cam_plane_loc, cam_plane_normal)
-        proj_c = line_plane_intersect(tri.c, cam_loc, cam_plane_loc, cam_plane_normal)
-        result_tri.a = pp_helper(cam_right_vec, cam_up_vec, proj_a, cam_plane_loc, tri.a, cam_loc)
-        result_tri.b = pp_helper(cam_right_vec, cam_up_vec, proj_b, cam_plane_loc, tri.b, cam_loc)
-        result_tri.c = pp_helper(cam_right_vec, cam_up_vec, proj_c, cam_plane_loc, tri.c, cam_loc)
+        proj_a = line_plane_intersect(tri.a, camera.loc, cam_plane_loc, cam_plane_normal)
+        proj_b = line_plane_intersect(tri.b, camera.loc, cam_plane_loc, cam_plane_normal)
+        proj_c = line_plane_intersect(tri.c, camera.loc, cam_plane_loc, cam_plane_normal)
+        result_tri.a = pp_helper(cam_right_vec, cam_up_vec, proj_a, cam_plane_loc, tri.a, camera.loc)
+        result_tri.b = pp_helper(cam_right_vec, cam_up_vec, proj_b, cam_plane_loc, tri.b, camera.loc)
+        result_tri.c = pp_helper(cam_right_vec, cam_up_vec, proj_c, cam_plane_loc, tri.c, camera.loc)
         result.append(result_tri)
     return result
 
