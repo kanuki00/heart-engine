@@ -1,7 +1,8 @@
 # heart-engine
 Terminal based 3D engine made in python
 
+Currently, v3 is the best functional version
+
 ### Usage
-Run these commands:\
-```source setup-venv.sh```\
-```python engine.py game1```
+In the "v3" directory, run the command:\
+```python main.py```
