@@ -35,11 +35,6 @@ namespace types
 
 namespace math
 {
-    void cross(types::vec3 a, types::vec3 b)
-    {
-        //TODO
-    }
-
     bool edge_func(types::vec3 a, types::vec3 b, types::vec3 p)
     {
         float side = (p.x - a.x) * (b.y - a.y) - (p.y - a.y) * (b.x - a.x);
@@ -69,10 +64,8 @@ std::chrono::nanoseconds time_now()
     return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch());
 }
 
-void rasterize(const types::intvec2& resolution, types::intvec3 (&f_buffer)[])
+void rasterize(const types::intvec2& resolution, types::intvec3 (&f_buffer)[], types::tri (&proj_tris)[], const types::tri (&world_tris)[], int tricount)
 {
-    types::tri t = types::tri(types::vec3(0.0f, 0.5f, 0.0f), types::vec3(-0.5f, -0.5f, 0.0f), types::vec3(0.5f, -0.5f, 0.0f));
-
     for(int y = 0; y < resolution.y; y++)
     {
         for(int x = 0; x < resolution.x; x++)
@@ -80,9 +73,12 @@ void rasterize(const types::intvec2& resolution, types::intvec3 (&f_buffer)[])
             float tp_x = static_cast<float>(x)/static_cast<float>(resolution.x);
             float tp_y = static_cast<float>(y)/static_cast<float>(resolution.y);
             types::vec3 tp = types::vec3(tp_x*2.0f-1.0f, tp_y*-2.0f+1.0f, 0.0f); // test point
-            if(math::point_in_triangle(tp, t))
+            for(int t = 0; t < tricount; t++)
             {
-                f_buffer[y*resolution.x+x] = types::intvec3(255, 255, 255);
+                if(math::point_in_triangle(tp, proj_tris[t]))
+                {
+                    f_buffer[y*resolution.x+x] = types::intvec3(255, 255, 255);
+                }
             }
         }
     }
@@ -90,8 +86,6 @@ void rasterize(const types::intvec2& resolution, types::intvec3 (&f_buffer)[])
 
 void draw_frame_buffer(const types::intvec2& resolution, types::intvec3 f_buffer[])
 {
-    std::chrono::nanoseconds time_start = time_now();
-    
     std::cout << "\033[H";
     for(int y = 0; y < resolution.y; y++)
     {
@@ -106,10 +100,6 @@ void draw_frame_buffer(const types::intvec2& resolution, types::intvec3 f_buffer
         // printing ansi color reset code and newline
         std::cout << "\033[0m\n";
     }
-
-    std::chrono::nanoseconds time_end = time_now();
-    std::chrono::nanoseconds time_delta = time_end-time_start;
-    std::cout << std::to_string(static_cast<float>(time_delta.count())/MILLION) << "ms \n";
 }
 
 int main()
@@ -121,8 +111,19 @@ int main()
     std::chrono::nanoseconds exe_time_start = time_now();
     while(static_cast<float>((time_now()-exe_time_start).count())/BILLION < exe_time)
     {
-        rasterize(render_resolution, frame_buffer);
+        std::chrono::nanoseconds time_start = time_now();
+        // rendering start
+        types::tri proj_tris[] = { // TODO load mesh from json (requires 3rd party json lib and docker container)
+            types::tri(types::vec3(0.0f, 0.5f, 0.0f), types::vec3(-0.5f, -0.5f, 0.0f), types::vec3(0.5f, -0.5f, 0.0f)),
+            types::tri(types::vec3(1.0f, 0.5f, 0.0f), types::vec3(0.0f, 0.5f, 0.0f), types::vec3(0.5f, -0.5f, 0.0f))
+        };
+        int tricount = sizeof(proj_tris)/sizeof(types::tri); // TODO figure out a more portable way of getting array length
+        rasterize(render_resolution, frame_buffer, proj_tris, proj_tris, tricount);
         draw_frame_buffer(render_resolution, frame_buffer);
+        // rendering end
+        std::chrono::nanoseconds time_end = time_now();
+        std::chrono::nanoseconds time_delta = time_end-time_start;
+        std::cout << std::to_string(static_cast<float>(time_delta.count())/MILLION) << "ms \n";
     }
     return 0;
 }
