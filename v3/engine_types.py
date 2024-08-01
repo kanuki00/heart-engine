@@ -119,6 +119,13 @@ def rotate_tri(tri, q):
     return triangle(a, b, c)
 
 
+def translate_tri(tri, v):
+    a = tri.a + v
+    b = tri.b + v
+    c = tri.c + v
+    return triangle(a, b ,c)
+
+
 def vec3_to_rgb(v):
     r = max(v.x * 255, 0)
     g = max(v.y * 255, 0)

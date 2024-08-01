@@ -23,6 +23,19 @@ def loadmeshjson(file):
             result.append(r_tri)
         return result
 
+
+def loadmeshjson_v2(file):
+    with open(file) as meshfile:
+        raw_data = json.load(meshfile)
+        result = []
+        for ind in raw_data["indices"]:
+            a = raw_data["vertices"][ind[0]]
+            b = raw_data["vertices"][ind[1]]
+            c = raw_data["vertices"][ind[2]]
+            r_tri = et.triangle(et.vector3(a[0], a[1], a[2]), et.vector3(b[0], b[1], b[2]), et.vector3(c[0], c[1], c[2]))
+            result.append(r_tri)
+        return result
+
 def make_pixel_list(resolution):
     result = []
     for y in range(resolution.y):
@@ -99,14 +112,16 @@ def render_frame(frame_buffer, render_resolution, pixel_list, scene_tris, scene_
 def main():
     start = default_timer()
     plist = make_pixel_list(rres)
-    scene_triangles = loadmeshjson("mesh.json")
+    scene_triangles = loadmeshjson_v2("../mesh.json")
     rotation = et.quaternion(0, 0, 0, 1)
     scene_camera = et.camera(et.vector3(2.8, -4.6, 2), et.quaternion(0.546893, 0.154827, 0.222631, 0.792068))
     while default_timer() - start < exetime:
         rotated_s_triangles = []
         for i in range(len(scene_triangles)):
             tri = scene_triangles[i]
-            rotated_s_triangles.append(et.rotate_tri(tri, rotation))
+            rotated = et.rotate_tri(tri, rotation)
+            translated = et.translate_tri(rotated, et.vector3(0.0, 0.0, 0.0))
+            rotated_s_triangles.append(translated)
         rotation = rotation*et.normalized(et.quaternion(0,0,0.1,1))
         rotation = et.normalized(rotation)
         render_frame(fbuffer, rres, plist, rotated_s_triangles, scene_camera)
