@@ -112,7 +112,7 @@ def render_frame(frame_buffer, render_resolution, pixel_list, scene_tris, scene_
 def main():
     start = default_timer()
     plist = make_pixel_list(rres)
-    scene_triangles = loadmeshjson_v2("../mesh.json")
+    scene_triangles = loadmeshjson_v2("mesh.json")
     rotation = et.quaternion(0, 0, 0, 1)
     scene_camera = et.camera(et.vector3(2.8, -4.6, 2), et.quaternion(0.546893, 0.154827, 0.222631, 0.792068))
     while default_timer() - start < exetime:
