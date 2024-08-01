@@ -1,8 +1,12 @@
 #include <iostream>
 #include <string>
 #include <chrono>
+#include "../../../json/single_include/nlohmann/json.hpp"
+
 #define MILLION 1000000.0f
 #define BILLION 1000000000.0f
+
+using json = nlohmann::json;
 
 namespace types
 {
@@ -105,7 +109,7 @@ void draw_frame_buffer(const types::intvec2& resolution, types::intvec3 f_buffer
 int main()
 {
     const int exe_time = 10;
-    const types::intvec2 render_resolution = types::intvec2(100, 50);
+    const types::intvec2 render_resolution = types::intvec2(200, 100);
     types::intvec3 frame_buffer[render_resolution.x * render_resolution.y];
 
     std::chrono::nanoseconds exe_time_start = time_now();
