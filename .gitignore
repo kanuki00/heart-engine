@@ -1,9 +1,16 @@
+# setup for ignoring extentionless files (eg. elfs)
+# ignoring everything
 *
+# unignoring everything with an extention
 !*.*
+# unignoring all directories
 !*/
+
+# manual ignores
 .idea/
 venv/
 __pycache__/
+cmake-build-debug/
 *.blend
 *.blend1
-*.elf
+!Makefile

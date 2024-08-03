@@ -1,7 +1,8 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <chrono>
-#include "../../../json/single_include/nlohmann/json.hpp"
+#include "/home/kanuki/Desktop/json/single_include/nlohmann/json.hpp"
 
 #define MILLION 1000000.0f
 #define BILLION 1000000000.0f
@@ -14,7 +15,7 @@ namespace types
     {
         float x, y, z;
         vec3(float in_x, float in_y, float in_z) : x(in_x), y(in_y), z(in_z) {}
-        vec3() {x = 0.0f; y = 0.0f; z = 0.0f;}
+        vec3() : x(0.0f), y(0.0f), z(0.0f)  {}
     };
 
     struct intvec3
@@ -34,7 +35,9 @@ namespace types
     {
         vec3 a, b, c;
         tri(vec3 in_a, vec3 in_b, vec3 in_c) : a(in_a), b(in_b), c(in_c) {}
+        tri() : a(vec3()), b(vec3()), c(vec3()) {}
     };
+
 }
 
 namespace math
@@ -68,7 +71,51 @@ std::chrono::nanoseconds time_now()
     return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch());
 }
 
-void rasterize(const types::intvec2& resolution, types::intvec3 (&f_buffer)[], types::tri (&proj_tris)[], const types::tri (&world_tris)[], int tricount)
+int load_tricount(const char path[])
+{
+    auto file = std::ifstream(path);
+    json data = json::parse(file);
+    return data["indices"].size();
+}
+
+types::tri* load_mesh(const char path[], int tricount, types::tri triangles[])
+{
+    auto file = std::ifstream(path);
+    json data = json::parse(file);
+    for(int i = 0; i<tricount; i++)
+    {
+        types::tri from_data;
+        const int idx_a = data["indices"][i][0];
+        from_data.a = types::vec3(
+            data["vertices"][idx_a][0],
+            data["vertices"][idx_a][1],
+            data["vertices"][idx_a][2]);
+
+        const int idx_b = data["indices"][i][1];
+        from_data.b = types::vec3(
+            data["vertices"][idx_b][0],
+            data["vertices"][idx_b][1],
+            data["vertices"][idx_b][2]);
+
+        const int idx_c= data["indices"][i][2];
+        from_data.c = types::vec3(
+            data["vertices"][idx_c][0],
+            data["vertices"][idx_c][1],
+            data["vertices"][idx_c][2]);
+        triangles[i] = from_data;
+    }
+    return triangles;
+}
+
+int* test(int arr[])
+{
+    arr[0] = 45;
+    arr[1] = 69;
+    return arr;
+}
+
+//template<int N>
+void rasterize(const types::intvec2& resolution, types::intvec3 (&f_buffer)[], types::tri* proj_tris, types::tri* world_tris, int tricount)
 {
     for(int y = 0; y < resolution.y; y++)
     {
@@ -109,20 +156,31 @@ void draw_frame_buffer(const types::intvec2& resolution, types::intvec3 f_buffer
 int main()
 {
     const int exe_time = 10;
-    const types::intvec2 render_resolution = types::intvec2(200, 100);
+    const types::intvec2 render_resolution = types::intvec2(100, 50);
     types::intvec3 frame_buffer[render_resolution.x * render_resolution.y];
 
     std::chrono::nanoseconds exe_time_start = time_now();
+    if(false)
+    {
+        int my_arr[2];
+        int* ap = test(my_arr);
+        std::cout << ap[1] << "\n";
+        return 0;
+    }
     while(static_cast<float>((time_now()-exe_time_start).count())/BILLION < exe_time)
     {
         std::chrono::nanoseconds time_start = time_now();
         // rendering start
-        types::tri proj_tris[] = { // TODO load mesh from json (requires 3rd party json lib and docker container)
-            types::tri(types::vec3(0.0f, 0.5f, 0.0f), types::vec3(-0.5f, -0.5f, 0.0f), types::vec3(0.5f, -0.5f, 0.0f)),
-            types::tri(types::vec3(1.0f, 0.5f, 0.0f), types::vec3(0.0f, 0.5f, 0.0f), types::vec3(0.5f, -0.5f, 0.0f))
-        };
-        int tricount = sizeof(proj_tris)/sizeof(types::tri); // TODO figure out a more portable way of getting array length
-        rasterize(render_resolution, frame_buffer, proj_tris, proj_tris, tricount);
+        // loading mesh
+        // tricount
+        int tc = load_tricount("test_mesh.json");
+        // initializing an array with tricount so that we can keep memory of it in loop scope
+        types::tri t[tc];
+        // loading triangles
+        types::tri* triangles = load_mesh("test_mesh.json", tc, t);
+        // rasterizing
+        rasterize(render_resolution, frame_buffer, triangles, triangles, tc);
+        // drawing to screen
         draw_frame_buffer(render_resolution, frame_buffer);
         // rendering end
         std::chrono::nanoseconds time_end = time_now();
