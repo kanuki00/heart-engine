@@ -2,6 +2,10 @@
 #include <fstream>
 #include <string>
 #include <chrono>
+#include <cmath>
+#include <algorithm>
+#include <complex>
+
 #include "/home/kanuki/Desktop/json/single_include/nlohmann/json.hpp"
 
 #define MILLION 1000000.0f
@@ -16,6 +20,22 @@ namespace types
         float x, y, z;
         vec3(float in_x, float in_y, float in_z) : x(in_x), y(in_y), z(in_z) {}
         vec3() : x(0.0f), y(0.0f), z(0.0f)  {}
+        vec3 operator-(vec3 const& vec) const
+        {
+            vec3 res;
+            res.x = x - vec.x;
+            res.y = y - vec.y;
+            res.z = z - vec.z;
+            return res;
+        }
+        vec3 operator/(float const& num) const
+        {
+            vec3 res;
+            res.x = x/num;
+            res.y = y/num;
+            res.z = z/num;
+            return res;
+        }
     };
 
     struct intvec3
@@ -63,6 +83,40 @@ namespace math
             return false;
         }
         return true;
+    }
+
+    types::vec3 cross(const types::vec3 v1, const types::vec3 v2)
+    {
+        float x = v1.y * v2.z - v1.z * v2.y;
+        float y = v1.z * v2.x - v1.x * v2.z;
+        float z = v1.x * v2.y - v1.y * v2.x;
+        return {x, y, z};
+    }
+
+    float dot(const types::vec3 v1, const types::vec3 v2)
+    {
+        return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+    }
+
+    float vec3_len(const types::vec3 v)
+    {
+        return std::sqrt(dot(v, v));
+    }
+
+    types::vec3 normalize(const types::vec3 v)
+    {
+        return v / vec3_len(v);
+    }
+
+    types::intvec3 vec3_to_rgb(types::vec3 v)
+    {
+        float r = v.x * 255.0f;
+        float g = v.y * 255.0f;
+        float b = v.z * 255.0f;
+        r = std::clamp(r, 0.0f, 255.0f);
+        g = std::clamp(g, 0.0f, 255.0f);
+        b = std::clamp(b, 0.0f, 255.0f);
+        return types::intvec3(r, g, b);
     }
 }
 
@@ -126,9 +180,12 @@ void rasterize(const types::intvec2& resolution, types::intvec3 (&f_buffer)[], t
             types::vec3 tp = types::vec3(tp_x*2.0f-1.0f, tp_y*-2.0f+1.0f, 0.0f); // test point
             for(int t = 0; t < tricount; t++)
             {
-                if(math::point_in_triangle(tp, proj_tris[t]))
+                types::tri p_tri = proj_tris[t];
+                if(math::point_in_triangle(tp, p_tri))
                 {
-                    f_buffer[y*resolution.x+x] = types::intvec3(255, 255, 255);
+                    types::vec3 normal = math::cross(p_tri.b-p_tri.a, p_tri.c-p_tri.a);
+                    normal = math::normalize(normal);
+                    f_buffer[y*resolution.x+x] = math::vec3_to_rgb(normal);
                 }
             }
         }
@@ -173,11 +230,11 @@ int main()
         // rendering start
         // loading mesh
         // tricount
-        int tc = load_tricount("test_mesh.json");
+        int tc = load_tricount("test_mesh2.json");
         // initializing an array with tricount so that we can keep memory of it in loop scope
         types::tri t[tc];
         // loading triangles
-        types::tri* triangles = load_mesh("test_mesh.json", tc, t);
+        types::tri* triangles = load_mesh("test_mesh2.json", tc, t);
         // rasterizing
         rasterize(render_resolution, frame_buffer, triangles, triangles, tc);
         // drawing to screen
