@@ -56,6 +56,12 @@ namespace types
         vec3 a, b, c;
         tri(vec3 in_a, vec3 in_b, vec3 in_c) : a(in_a), b(in_b), c(in_c) {}
         tri() : a(vec3()), b(vec3()), c(vec3()) {}
+        tri no_z() const {
+            const auto nza = vec3(a.x, a.y, 0.0f);
+            const auto nzb = vec3(b.x, b.y, 0.0f);
+            const auto nzc = vec3(c.x, c.y, 0.0f);
+            return {nza, nzb, nzc};
+        }
     };
 
 }
@@ -118,6 +124,26 @@ namespace math
         b = std::clamp(b, 0.0f, 255.0f);
         return types::intvec3(r, g, b);
     }
+    // Get barycentric co-ordinates with point and triangle
+    types::vec3 get_bc_coords(const types::vec3 p, const types::tri& t)
+    {
+        const float t_para_area = vec3_len(cross(t.b-t.a, t.c-t.a));
+        const float w_area = vec3_len(cross(t.b-t.a, p-t.a));
+        const float u_area = vec3_len(cross(t.c-t.b, p-t.b));
+        const float v_area = vec3_len(cross(t.a-t.c, p-t.c));
+        return {u_area/t_para_area, v_area/t_para_area, w_area/t_para_area};
+    }
+    /*
+     * i = [1, 0, 0], j = [0, 1, 0], k = [0, 0, 1]
+     *
+     * in matrix form = i[1, j[0, k[0,
+     *                    0,   1,   0,
+     *                    0]   0]   1]
+     *
+     * say I wanted to multiply the vector [5, 9, -3] with the matrix
+     *
+     */
+
 }
 
 std::chrono::nanoseconds time_now()
@@ -168,7 +194,6 @@ int* test(int arr[])
     return arr;
 }
 
-//template<int N>
 void rasterize(const types::intvec2& resolution, types::intvec3 (&f_buffer)[], types::tri* proj_tris, types::tri* world_tris, int tricount)
 {
     for(int y = 0; y < resolution.y; y++)
@@ -178,14 +203,21 @@ void rasterize(const types::intvec2& resolution, types::intvec3 (&f_buffer)[], t
             float tp_x = static_cast<float>(x)/static_cast<float>(resolution.x);
             float tp_y = static_cast<float>(y)/static_cast<float>(resolution.y);
             types::vec3 tp = types::vec3(tp_x*2.0f-1.0f, tp_y*-2.0f+1.0f, 0.0f); // test point
+            float shallowest = -BILLION;
             for(int t = 0; t < tricount; t++)
             {
                 types::tri p_tri = proj_tris[t];
                 if(math::point_in_triangle(tp, p_tri))
                 {
-                    types::vec3 normal = math::cross(p_tri.b-p_tri.a, p_tri.c-p_tri.a);
-                    normal = math::normalize(normal);
-                    f_buffer[y*resolution.x+x] = math::vec3_to_rgb(normal);
+                    types::vec3 bc = math::get_bc_coords(tp, p_tri.no_z());
+                    float fragment_depth = p_tri.a.z*bc.x + p_tri.b.z*bc.y + p_tri.c.z*bc.z;
+                    if(fragment_depth > shallowest)
+                    {
+                        shallowest = fragment_depth;
+                        types::vec3 normal = math::cross(p_tri.b-p_tri.a, p_tri.c-p_tri.a);
+                        normal = math::normalize(normal);
+                        f_buffer[y*resolution.x+x] = math::vec3_to_rgb(normal);
+                    }
                 }
             }
         }
@@ -230,11 +262,11 @@ int main()
         // rendering start
         // loading mesh
         // tricount
-        int tc = load_tricount("test_mesh2.json");
+        int tc = load_tricount("../test_mesh2.json");
         // initializing an array with tricount so that we can keep memory of it in loop scope
         types::tri t[tc];
         // loading triangles
-        types::tri* triangles = load_mesh("test_mesh2.json", tc, t);
+        types::tri* triangles = load_mesh("../test_mesh2.json", tc, t);
         // rasterizing
         rasterize(render_resolution, frame_buffer, triangles, triangles, tc);
         // drawing to screen
