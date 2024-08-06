@@ -13,4 +13,5 @@ __pycache__/
 cmake-build-debug/
 *.blend
 *.blend1
+*.png
 !Makefile

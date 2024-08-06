@@ -75,6 +75,74 @@ class matrix4x4:
         sys.stdout.write("[%f %f %f %f]\n" % (self.r4.x, self.r4.y, self.r4.z, self.r4.w))
 
 
+class vector8:
+    x = 0.0
+    y = 0.0
+    z = 0.0
+    w = 0.0
+
+    a = 0.0
+    b = 0.0
+    c = 0.0
+    d = 0.0
+
+    def __init__(self, x, y, z, w, a, b, c, d):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.w = w
+        self.a = a
+        self.b = b
+        self.c = c
+        self.d = d
+
+
+class matrix4x8:
+    # [1 0 0 0 | 1 0 0 0]
+    # [0 1 0 0 | 0 1 0 0]
+    # [0 0 1 0 | 0 0 1 0]
+    # [0 0 0 1 | 0 0 0 1]
+
+    r1 = vector8(1, 0, 0, 0, 1, 0, 0, 0)
+    r2 = vector8(0, 1, 0, 0, 0, 1, 0, 0)
+    r3 = vector8(0, 0, 1, 0, 0, 0, 1, 0)
+    r4 = vector8(0, 0, 0, 1, 0, 0, 0, 1)
+
+    # initializing with two 4x4 matrices
+    def __init__(self, left, right):
+        self.r1 = vector8(left.r1.x, left.r1.y, left.r1.z, left.r1.w, right.r1.x, right.r1.y, right.r1.z, right.r1.w)
+        self.r2 = vector8(left.r2.x, left.r2.y, left.r2.z, left.r2.w, right.r2.x, right.r2.y, right.r2.z, right.r2.w)
+        self.r3 = vector8(left.r3.x, left.r3.y, left.r3.z, left.r3.w, right.r3.x, right.r3.y, right.r3.z, right.r3.w)
+        self.r4 = vector8(left.r4.x, left.r4.y, left.r4.z, left.r4.w, right.r4.x, right.r4.y, right.r4.z, right.r4.w)
+
+
+def im33h1():
+    pass
+    # if left_side.r2.x != 0:
+    #     l_candidates = [left_side.r1, left_side.r3]
+    #     r_candidates = [right_side.r1, right_side.r3]
+    #     l_cand = None
+    #     r_cand = None
+    #     for i in range(len(l_candidates)):
+    #         l_c = l_candidates[i]
+    #         r_c = r_candidates[i]
+    #         if l_c.x != 0:
+    #             l_cand = l_c
+    #             r_cand = r_c
+    #             break
+    #     multiplier = -left_side.r2.x / l_cand.x
+    #     to_add_l = l_cand * multiplier
+    #     to_add_r = r_cand * multiplier
+    #
+    #     left_side.r2 = left_side.r2 + to_add_l
+    #     right_side.r2 = right_side.r2 + to_add_r
+    #
+    #     left_side.print()
+    #     sys.stdout.write("\n")
+    #     right_side.print()
+    #     sys.stdout.write("\n")
+
+
 # Gauss Jordan Elimination Method
 def invert_matrix3x3(in_matrix):
     # Reduction order 0 to 8
@@ -83,7 +151,7 @@ def invert_matrix3x3(in_matrix):
     # [1  2  8]
     left_side = in_matrix
     right_side = matrix3x3()
-
+    # 0
     if left_side.r2.x != 0:
         l_candidates = [left_side.r1, left_side.r3]
         r_candidates = [right_side.r1, right_side.r3]
@@ -92,28 +160,13 @@ def invert_matrix3x3(in_matrix):
         for i in range(len(l_candidates)):
             l_c = l_candidates[i]
             r_c = r_candidates[i]
-            if l_c.x != 0:
+            if l_c.x != 0:  # NOTE component
                 l_cand = l_c
                 r_cand = r_c
                 break
         multiplier = -left_side.r2.x / l_cand.x
         to_add_l = l_cand * multiplier
         to_add_r = r_cand * multiplier
-
-        # sys.stdout.write("target: ")
-        # left_side.r2.print()
-        # sys.stdout.write("cand: ")
-        # l_cand.print()
-        # sys.stdout.write("mult: ")
-        # print(multiplier)
-        # sys.stdout.write("to add left side: ")
-        # to_add_l.print()
-        # sys.stdout.write("to add right side: ")
-        # to_add_r.print()
-        # sys.stdout.write("left side result: ")
-        # (left_side.r2 + to_add_l).print()
-        # sys.stdout.write("right side result: ")
-        # (right_side.r2 + to_add_r).print()
 
         left_side.r2 = left_side.r2 + to_add_l
         right_side.r2 = right_side.r2 + to_add_r
@@ -122,7 +175,7 @@ def invert_matrix3x3(in_matrix):
         sys.stdout.write("\n")
         right_side.print()
         sys.stdout.write("\n")
-
+    # 1
     if left_side.r3.x != 0:
         l_candidates = [left_side.r1, left_side.r2]
         r_candidates = [right_side.r1, right_side.r2]
@@ -146,56 +199,99 @@ def invert_matrix3x3(in_matrix):
         sys.stdout.write("\n")
         right_side.print()
         sys.stdout.write("\n")
-
-def invert_matrix4x4(matrix):
-    # Reduction order 0 to 15
-    # [12 11  9  8]
-    # [ 0 13 10  7]
-    # [ 1  4 14  6]
-    # [ 2  3  5 15]
-
-    left_side = matrix
-    right_side = matrix4x4()
-
-    # 1 out of 16
-    if matrix.r2.x != 0:
-        l_candidates = [left_side.r1, left_side.r3, left_side.r4]
-        r_candidates = [right_side.r1, right_side.r3, right_side.r4]
+    # 2
+    if left_side.r3.y != 0:
+        l_candidates = [left_side.r1, left_side.r2]
+        r_candidates = [right_side.r1, right_side.r2]
         l_cand = None
         r_cand = None
         for i in range(len(l_candidates)):
             l_c = l_candidates[i]
             r_c = r_candidates[i]
-            if l_c.x != 0:
+            if l_c.y != 0:
                 l_cand = l_c
                 r_cand = r_c
                 break
-        multiplier = -matrix.r2.x / l_cand.x
-        to_add_l = l_cand*multiplier
-        to_add_r = r_cand*multiplier
+        multiplier = -left_side.r3.y / l_cand.y
+        to_add_l = l_cand * multiplier
+        to_add_r = r_cand * multiplier
 
-        l_cand.print()
-        print(multiplier)
-        matrix.r2.print()
-        to_add_l.print()
+        left_side.r3 = left_side.r3 + to_add_l
+        right_side.r3 = right_side.r3 + to_add_r
 
-        (left_side.r2 + to_add_l).print()
-        (right_side.r2 + to_add_r).print()
+        left_side.print()
+        sys.stdout.write("\n")
+        right_side.print()
+        sys.stdout.write("\n")
+    # 3
+    if left_side.r2.z != 0:
+        l_candidates = [left_side.r1, left_side.r3]
+        r_candidates = [right_side.r1, right_side.r3]
+        l_cand = None
+        r_cand = None
+        for i in range(len(l_candidates)):
+            l_c = l_candidates[i]
+            r_c = r_candidates[i]
+            if l_c.z != 0:
+                l_cand = l_c
+                r_cand = r_c
+                break
+        multiplier = -left_side.r2.z / l_cand.z
+        to_add_l = l_cand * multiplier
+        to_add_r = r_cand * multiplier
 
-    return matrix4x4()
+        left_side.r2 = left_side.r2 + to_add_l
+        right_side.r2 = right_side.r2 + to_add_r
+
+        left_side.print()
+        sys.stdout.write("\n")
+        right_side.print()
+        sys.stdout.write("\n")
+    # 4
+    if left_side.r1.z != 0:
+        l_candidates = [left_side.r2, left_side.r3]
+        r_candidates = [right_side.r2, right_side.r3]
+        l_cand = None
+        r_cand = None
+        for i in range(len(l_candidates)):
+            l_c = l_candidates[i]
+            r_c = r_candidates[i]
+            if l_c.z != 0:
+                l_cand = l_c
+                r_cand = r_c
+                break
+        multiplier = -left_side.r1.z / l_cand.z
+        to_add_l = l_cand * multiplier
+        to_add_r = r_cand * multiplier
+
+        left_side.r1 = left_side.r1 + to_add_l
+        right_side.r1 = right_side.r1 + to_add_r
+
+        left_side.print()
+        sys.stdout.write("\n")
+        right_side.print()
+        sys.stdout.write("\n")
 
 
-# m = matrix4x4()
-# m.r1 = vector4(1, 2, -1, 0)
-# m.r2 = vector4(2, 5, 1, 0)
-# m.r3 = vector4(-1, -2, 2, 0)
-# m.r4 = m.r4
-#
-# im = invert_matrix4x4(m)
-# sys.stdout.write("\n\n\n")
-# m.print()
-# sys.stdout.write("\n")
-# im.print()
+# TODO
+def invert_mat4x4(in_mat4x4):
+    table = matrix4x8(in_mat4x4, matrix4x4())
+    # Reduction order 0 to 15
+    # r1 [12 11  9  8]
+    # r2 [ 0 13 10  7]
+    # r3 [ 1  4 14  6]
+    # r4 [ 2  3  5 15]
+    targets = [
+        table.r2.x, table.r3.x, table.r4.x, table.r4.y, table.r3.y, table.r4.z,
+        table.r3.w, table.r2.w, table.r1.w, table.r1.z, table.r2.z, table.r1.y
+    ]
+    tar_row_comp_idxs = [
+        0, 0, 0, 1, 1, 2,
+        3, 3, 3, 2, 2, 1
+    ]
+    if targets[0] != 0:
+        pass
+
 
 m = matrix3x3()
 m.r1 = vector3(1, 2, -1)
