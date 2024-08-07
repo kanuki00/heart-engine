@@ -5,6 +5,7 @@
 #include <cmath>
 #include <algorithm>
 #include <complex>
+#include <sstream>
 
 #include "/home/kanuki/Desktop/json/single_include/nlohmann/json.hpp"
 
@@ -64,6 +65,61 @@ namespace types
         }
     };
 
+    struct vec4
+    {
+        float x, y, z, w;
+
+        vec4() {x = 0.0f; y = 0.0f; z = 0.0f; w = 0.0f;}
+        vec4(const float in_x, const float in_y, const float in_z, const float in_w) : x(in_x), y(in_y), z(in_z), w(in_w) {}
+
+        std::string to_string()
+        {
+            std::ostringstream ss_x;
+            ss_x << x;
+            std::ostringstream ss_y;
+            ss_y << y;
+            std::ostringstream ss_z;
+            ss_z << z;
+            std::ostringstream ss_w;
+            ss_w << w;
+            return "["+ss_x.str()+", "+ss_y.str()+", "+ss_z.str()+", "+ss_w.str()+"]";
+        }
+    };
+
+    struct matrix4x4
+    {
+        // i, j, k and t are all columns of matrix
+        vec4 i, j, k, t;
+
+        matrix4x4() {i = vec4(); j = vec4(); k = vec4(); t = vec4();}
+        matrix4x4(vec4 in_i, vec4 in_j, vec4 in_k, vec4 in_t) : i(in_i), j(in_j), k(in_k), t(in_t) {}
+
+        vec4 get_row(const int rowidx) const
+        {
+            switch (rowidx)
+                {
+                case 0:
+                    return vec4(i.x, j.x, k.x, t.x);
+                case 1:
+                    return vec4(i.y, j.y, k.y, t.y);
+                case 2:
+                    return vec4(i.z, j.z, k.z, t.z);
+                case 3:
+                    return vec4(i.w, j.w, k.w, t.w);
+                default:
+                    return vec4(0.0f, 0.0f, 0.0f, 0.0f);
+            }
+        };
+
+        std::string to_string()
+        {
+            std::string r1s = get_row(0).to_string();
+            std::string r2s = get_row(1).to_string();
+            std::string r3s = get_row(2).to_string();
+            std::string r4s = get_row(3).to_string();
+            return r1s+"\n"+r2s+"\n"+r3s+"\n"+r4s+"\n";
+        }
+    };
 }
 
 namespace math
@@ -133,16 +189,6 @@ namespace math
         const float v_area = vec3_len(cross(t.a-t.c, p-t.c));
         return {u_area/t_para_area, v_area/t_para_area, w_area/t_para_area};
     }
-    /*
-     * i = [1, 0, 0], j = [0, 1, 0], k = [0, 0, 1]
-     *
-     * in matrix form = i[1, j[0, k[0,
-     *                    0,   1,   0,
-     *                    0]   0]   1]
-     *
-     * say I wanted to multiply the vector [5, 9, -3] with the matrix
-     *
-     */
 
 }
 
@@ -249,11 +295,15 @@ int main()
     types::intvec3 frame_buffer[render_resolution.x * render_resolution.y];
 
     std::chrono::nanoseconds exe_time_start = time_now();
-    if(false)
+    if(true)
     {
-        int my_arr[2];
-        int* ap = test(my_arr);
-        std::cout << ap[1] << "\n";
+        types::matrix4x4 my_matrix;
+        my_matrix.i = types::vec4(1.0f, 2.0f, -1.0f, 0.0f);
+        my_matrix.j = types::vec4(2.0f, 5.0f, -2.0f, 0.0f);
+        my_matrix.k = types::vec4(-1.0f, 1.0f, 2.0f, 0.0f);
+        my_matrix.t = types::vec4(5.0f, 2.0f, -7.0f, 1.0f);
+        std::cout << my_matrix.to_string() << "\n";
+
         return 0;
     }
     while(static_cast<float>((time_now()-exe_time_start).count())/BILLION < exe_time)

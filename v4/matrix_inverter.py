@@ -210,7 +210,7 @@ def invert_mat4x4(in_mat4x4):
             msr_cands = get_msr_cands(tar_row_idxs[i], table)  # multiplier source row candidates
             mult = 1
             add_cand = vector8(0, 0, 0, 1, 0, 0, 0, 1)
-            shortest_len = 1000000000.0  # TODO
+            shortest_len = 1000000000.0
             for c in msr_cands:
                 cand_comp = c.comp_by_idx(tar_row_comp_idxs[i])
                 if cand_comp != 0:
