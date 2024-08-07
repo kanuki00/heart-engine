@@ -67,10 +67,63 @@ namespace types
 
     struct vec4
     {
-        float x, y, z, w;
+        long double x, y, z, w;
 
         vec4() {x = 0.0f; y = 0.0f; z = 0.0f; w = 0.0f;}
         vec4(const float in_x, const float in_y, const float in_z, const float in_w) : x(in_x), y(in_y), z(in_z), w(in_w) {}
+
+        vec4 operator+(vec4 const& vec) const {
+            vec4 res;
+            res.x = x + vec.x;
+            res.y = y + vec.y;
+            res.z = z + vec.z;
+            res.w = w + vec.w;
+            return res;
+        }
+        vec4 operator-(vec4 const& vec) const
+        {
+            vec4 res;
+            res.x = x - vec.x;
+            res.y = y - vec.y;
+            res.z = z - vec.z;
+            res.w = w - vec.w;
+            return res;
+        }
+        vec4 operator*(float const& num) const
+        {
+            vec4 res;
+            res.x = x*num;
+            res.y = y*num;
+            res.z = z*num;
+            res.w = w*num;
+            return res;
+        }
+        vec4 operator/(float const& num) const
+        {
+            vec4 res;
+            res.x = x/num;
+            res.y = y/num;
+            res.z = z/num;
+            res.w = w/num;
+            return res;
+        }
+
+        float get_comp(int compidx)
+        {
+            switch (compidx)
+            {
+                case 0:
+                    return x;
+                case 1:
+                    return y;
+                case 2:
+                    return z;
+                case 3:
+                    return w;
+                default:
+                    return 0.0f;
+            }
+        }
 
         std::string to_string()
         {
@@ -91,7 +144,7 @@ namespace types
         // i, j, k and t are all columns of matrix
         vec4 i, j, k, t;
 
-        matrix4x4() {i = vec4(); j = vec4(); k = vec4(); t = vec4();}
+        matrix4x4() {}
         matrix4x4(vec4 in_i, vec4 in_j, vec4 in_k, vec4 in_t) : i(in_i), j(in_j), k(in_k), t(in_t) {}
 
         vec4 get_row(const int rowidx) const
@@ -109,7 +162,47 @@ namespace types
                 default:
                     return vec4(0.0f, 0.0f, 0.0f, 0.0f);
             }
-        };
+        }
+
+        void set_row(int rowidx, vec4 new_row_value) {
+            switch(rowidx) {
+                case 0:
+                    i.x = new_row_value.x;
+                    j.x = new_row_value.y;
+                    k.x = new_row_value.z;
+                    t.x = new_row_value.w;
+                    break;
+                case 1:
+                    i.y = new_row_value.x;
+                    j.y = new_row_value.y;
+                    k.y = new_row_value.z;
+                    t.y = new_row_value.w;
+                    break;
+                case 2:
+                    i.z = new_row_value.x;
+                    j.z = new_row_value.y;
+                    k.z = new_row_value.z;
+                    t.z = new_row_value.w;
+                    break;
+                case 3:
+                    i.w = new_row_value.x;
+                    j.w = new_row_value.y;
+                    k.w = new_row_value.z;
+                    t.w = new_row_value.w;
+                    break;
+                default:
+                    std::cout << "";
+                    break;
+            }
+        }
+
+        vec4* get_rows(vec4 in_rows[]) {
+            in_rows[0] = get_row(0);
+            in_rows[1] = get_row(1);
+            in_rows[2] = get_row(2);
+            in_rows[3] = get_row(3);
+            return in_rows;
+        }
 
         std::string to_string()
         {
@@ -159,15 +252,27 @@ namespace math
     {
         return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
     }
+    float dot(const types::vec4 v1, const types::vec4 v2)
+    {
+        return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w;
+    }
 
-    float vec3_len(const types::vec3 v)
+    float vec_len(const types::vec3 v)
+    {
+        return std::sqrt(dot(v, v));
+    }
+    float vec_len(const types::vec4 v)
     {
         return std::sqrt(dot(v, v));
     }
 
     types::vec3 normalize(const types::vec3 v)
     {
-        return v / vec3_len(v);
+        return v / vec_len(v);
+    }
+    types::vec4 normalize(const types::vec4 v)
+    {
+        return v / vec_len(v);
     }
 
     types::intvec3 vec3_to_rgb(types::vec3 v)
@@ -183,11 +288,90 @@ namespace math
     // Get barycentric co-ordinates with point and triangle
     types::vec3 get_bc_coords(const types::vec3 p, const types::tri& t)
     {
-        const float t_para_area = vec3_len(cross(t.b-t.a, t.c-t.a));
-        const float w_area = vec3_len(cross(t.b-t.a, p-t.a));
-        const float u_area = vec3_len(cross(t.c-t.b, p-t.b));
-        const float v_area = vec3_len(cross(t.a-t.c, p-t.c));
+        const float t_para_area = vec_len(cross(t.b-t.a, t.c-t.a));
+        const float w_area = vec_len(cross(t.b-t.a, p-t.a));
+        const float u_area = vec_len(cross(t.c-t.b, p-t.b));
+        const float v_area = vec_len(cross(t.a-t.c, p-t.c));
         return {u_area/t_para_area, v_area/t_para_area, w_area/t_para_area};
+    }
+
+    types::matrix4x4 invert_matrix4x4(types::matrix4x4 in_matrix) {
+        types::matrix4x4 tableL = in_matrix;
+        types::matrix4x4 tableR = types::matrix4x4();
+        tableR.i = types::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+        tableR.j = types::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+        tableR.k = types::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+        tableR.t = types::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+        std::cout << tableL.to_string() << "\n\n";
+        std::cout << tableR.to_string() << "\n\n";
+
+        /* Reduction order A to P
+           c0 c1 c2 c3
+        r0 [M  L  J  I]
+        r1 [A  N  K  H]
+        r2 [B  E  O  G]
+        r3 [C  D  F  P]
+        */
+        int tar_row_idxs[12] = {
+            1, 2, 3, 3, 2, 3,
+            2, 1, 0, 0, 1, 0
+        };
+        int tar_col_idx[12] = {
+            0, 0, 0, 1, 1, 2,
+            3, 3, 3, 2, 2, 1
+        };
+        for (int i = 0; i < 12; i++) {
+            float target = tableL.get_row(tar_row_idxs[i]).get_comp(tar_col_idx[i]);
+            if (target != 0.0f) {
+                //msr_cands = get_msr_cands(tar_row_idxs[i], table) // multiplier source row candidates
+                types::vec4 tLr[4] = {};
+                types::vec4* tableLrows = tableL.get_rows(tLr);
+                types::vec4 tRr[4] = {};
+                types::vec4* tableRrows = tableR.get_rows(tRr);
+                // debug
+                /*std::cout << "DEBUG\n";
+                for(int r = 0; r<4; r++) {
+                    auto v = tableLrows[r];
+                    std::cout << v.to_string() << "\n";
+                }*/
+                // debug end
+                float mult;
+                float shortest_len = 1000000000.0f;
+                types::vec4 rowL_result;
+                types::vec4 rowR_result;
+                for (int j = 0; j < 4; j++) {
+                    // making sure we dont add a multiplied target to the target
+                    if (j != tar_row_idxs[i]) {
+                        types::vec4 cand_rowL = tableLrows[j];
+                        types::vec4 cand_rowR = tableRrows[j];
+                        float cand_comp = cand_rowL.get_comp(tar_col_idx[i]);
+                        // making sure the candidate row's effective component is something else than zero,
+                        // so that adding a multiplied version of it to target will yield 0.
+                        if (cand_comp != 0.0f) {
+                            float cand_row_len = vec_len(cand_rowL);
+                            // checking that the vector4 representing the candidate is the shortest of the bunch
+                            if (cand_row_len < shortest_len) {
+                                shortest_len = cand_row_len;
+                                mult = -target / cand_comp;
+                                types::vec4 to_addL = cand_rowL * mult;
+                                types::vec4 to_addR = cand_rowR * mult;
+                                rowL_result = tableL.get_row(tar_row_idxs[i]) + to_addL;
+                                rowR_result = tableR.get_row(tar_row_idxs[i]) + to_addR;
+                            }
+                        }
+                    }
+                }
+                tableL.set_row(tar_row_idxs[i], rowL_result);
+                tableR.set_row(tar_row_idxs[i], rowR_result);
+                if(i == 0) {
+                    std::cout << "Phase 1:" << "\n";
+                    std::cout << tableL.to_string() << "\n\n";
+                    std::cout << tableR.to_string() << "\n\n";
+                }
+            }
+        }
+
+        return tableR;
     }
 
 }
@@ -231,13 +415,6 @@ types::tri* load_mesh(const char path[], int tricount, types::tri triangles[])
         triangles[i] = from_data;
     }
     return triangles;
-}
-
-int* test(int arr[])
-{
-    arr[0] = 45;
-    arr[1] = 69;
-    return arr;
 }
 
 void rasterize(const types::intvec2& resolution, types::intvec3 (&f_buffer)[], types::tri* proj_tris, types::tri* world_tris, int tricount)
@@ -302,8 +479,14 @@ int main()
         my_matrix.j = types::vec4(2.0f, 5.0f, -2.0f, 0.0f);
         my_matrix.k = types::vec4(-1.0f, 1.0f, 2.0f, 0.0f);
         my_matrix.t = types::vec4(5.0f, 2.0f, -7.0f, 1.0f);
-        std::cout << my_matrix.to_string() << "\n";
 
+        types::matrix4x4 my_matrix2;
+        my_matrix2.i = types::vec4(0.7f, 1.5f, -2.0f, 0.0f);
+        my_matrix2.j = types::vec4(5.0f, 1.0f, 1.5f, 0.0f);
+        my_matrix2.k = types::vec4(-1.0f, -1.8f, 2.6f, 0.0f);
+        my_matrix2.t = types::vec4(3.7f, 4.1f, -9.5f, 1.0f);
+
+        std::cout << math::invert_matrix4x4(my_matrix).to_string();
         return 0;
     }
     while(static_cast<float>((time_now()-exe_time_start).count())/BILLION < exe_time)
