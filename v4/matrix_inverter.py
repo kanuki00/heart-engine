@@ -1,145 +1,153 @@
-import math
-import sys
+# This code is contributed to geeksforgeeks.org by phasing17
+
+# Python3 program to find adjoint and
+# inverse of a matrix
+N = 4
+
+# Function to get cofactor of
+# A[p][q] in temp[][]. n is current
+# dimension of A[][]
+def getCofactor(A, temp, p, q, n):
+
+    i = 0
+    j = 0
+
+    # Looping for each element of the matrix
+    for row in range(n):
+
+        for col in range(n):
+
+            # Copying into temporary matrix only those element
+            # which are not in given row and column
+            if (row != p and col != q):
+
+                temp[i][j] = A[row][col]
+                j += 1
+
+                # Row is filled, so increase row index and
+                # reset col index
+                if (j == n - 1):
+                    j = 0
+                    i += 1
 
 
-class vec4:
-    x: float
-    y: float
-    z: float
-    w: float
+# Recursive function for finding determinant of matrix.
+#  n is current dimension of A[][].
+def determinant(A, n):
 
-    def __init__(self, x: float, y: float, z: float, w: float):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.w = w
+    D = 0   # Initialize result
 
-    def __add__(self, other):
-        return vec4(self.x + other.x, self.y + other.y, self.z + other.z, self.w + other.w)
+    # Base case : if matrix contains single element
+    if (n == 1):
+        return A[0][0]
 
-    def __sub__(self, other):
-        return vec4(self.x - other.x, self.y - other.y, self.z - other.z, self.w - other.w)
+    temp = []   # To store cofactors
+    for i in range(N):
+        temp.append([None for _ in range(N)])
 
-    def __mul__(self, other: float):
-        return vec4(self.x * other, self.y * other, self.z * other, self.w * other)
+    sign = 1   # To store sign multiplier
 
-    def __truediv__(self, other: float):
-        return vec4(self.x / other, self.y / other, self.z / other, self.w / other)
+    # Iterate for each element of first row
+    for f in range(n):
 
-    def get_comp(self, comp_idx: int) -> float:
-        match comp_idx:
-            case 0:
-                return self.x
-            case 1:
-                return self.y
-            case 2:
-                return self.z
-            case 3:
-                return self.w
+        # Getting Cofactor of A[0][f]
+        getCofactor(A, temp, 0, f, n)
+        D += sign * A[0][f] * determinant(temp, n - 1)
 
-    def to_string(self):
-        return "[%f %f %f %f]" % (self.x, self.y, self.z, self.w)
+        # terms are to be added with alternate sign
+        sign = -sign
 
-    def print(self):
-        sys.stdout.write(self.to_string())
-# end vector4
+    return D
 
 
-class mat4x4:
-    # columns of matrix
-    i: vec4
-    j: vec4
-    k: vec4
-    l: vec4
+# Function to get adjoint of A[N][N] in adj[N][N].
+def adjoint(A, adj):
 
-    def __init__(self):
-        pass
+    if (N == 1):
+        adj[0][0] = 1
+        return
 
-    def get_row(self, row_idx: int) -> vec4:
-        match row_idx:
-            case 0:
-                return vec4(self.i.x, self.j.x, self.k.x, self.l.x)
-            case 1:
-                return vec4(self.i.y, self.j.y, self.k.y, self.l.y)
-            case 2:
-                return vec4(self.i.z, self.j.z, self.k.z, self.l.z)
-            case 3:
-                return vec4(self.i.w, self.j.w, self.k.w, self.l.w)
+    # temp is used to store cofactors of A[][]
+    sign = 1
+    temp = []   # To store cofactors
+    for i in range(N):
+        temp.append([None for _ in range(N)])
 
-    def set_row(self, row_idx: int, new_value: vec4) -> None:
-        match row_idx:
-            case 0:
-                self.i.x = new_value.x
-                self.j.x = new_value.y
-                self.k.x = new_value.z
-                self.l.x = new_value.w
-                return
-            case 1:
-                self.i.y = new_value.x
-                self.j.y = new_value.y
-                self.k.y = new_value.z
-                self.l.y = new_value.w
-                return
-            case 2:
-                self.i.z = new_value.x
-                self.j.z = new_value.y
-                self.k.z = new_value.z
-                self.l.z = new_value.w
-                return
-            case 3:
-                self.i.w = new_value.x
-                self.j.w = new_value.y
-                self.k.w = new_value.z
-                self.l.w = new_value.w
-                return
+    for i in range(N):
+        for j in range(N):
+            # Get cofactor of A[i][j]
+            getCofactor(A, temp, i, j, N)
 
-    def print(self) -> None:
-        sys.stdout.write(
-            "%s\n" % (self.get_row(0).to_string()) +
-            "%s\n" % (self.get_row(1).to_string()) +
-            "%s\n" % (self.get_row(2).to_string()) +
-            "%s\n" % (self.get_row(3).to_string()))
-# end mat4x4
+            # sign of adj[j][i] positive if sum of row
+            # and column indexes is even.
+            sign = [1, -1][(i + j) % 2]
+
+            # Interchanging rows and columns to get the
+            # transpose of the cofactor matrix
+            adj[j][i] = (sign)*(determinant(temp, N-1))
 
 
-# def dot(v1: vec4, v2: vec4):
-#     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w
-#
-#
-# def length(v: vec4):
-#     return math.sqrt(dot(v, v))
+# Function to calculate and store inverse, returns false if
+# matrix is singular
+def inverse(A, inverse):
 
-def det(matrix: mat4x4) -> float:
-    workpiece: mat4x4 = matrix
-    for i in range(4):
-        row_original_view: vec4 = workpiece.get_row(i)
-        ct: float = row_original_view.get_comp(i)
-        oneified: vec4 = row_original_view / ct
-        for j in range(i+1, 4):
-            row: vec4 = workpiece.get_row(j)
-            to_null: float = row.get_comp(i)
-            row_result = row - oneified * to_null
-            workpiece.set_row(j, row_result)
-        workpiece.print()
-        sys.stdout.write("\n")
+    # Find determinant of A[][]
+    det = determinant(A, N)
+    if (det == 0):
+        print("Singular matrix, can't find its inverse")
+        return False
 
-    result: float = 1.0
-    for i in range(4):
-        result *= workpiece.get_row(i).get_comp(i)
-    return result
+    # Find adjoint
+    adj = []
+    for i in range(N):
+        adj.append([None for _ in range(N)])
+    adjoint(A, adj)
 
-#  test matrix 4x4 no. 1:
-#  1.45   2.0   -1.0    5.2
-#  2.0    5.0    6.0    2.0
-# -7.0	-19.3    2.0   -7.31
-#  8.98   0.0    6.43   1.0
-#  Determinant should equal -4845.9069749999999996
+    # Find Inverse using formula "inverse(A) = adj(A)/det(A)"
+    for i in range(N):
+        for j in range(N):
+            inverse[i][j] = adj[i][j] / det
 
-m = mat4x4()
-m.l = vec4(5.2, 2.0, -7.31, 1.0)
-m.k = vec4(-1.0, 6.0, 2.0, 6.43)
-m.j = vec4(2.0, 5.0, -19.3, 0.0)
-m.i = vec4(1.45, 2.0, -7.0, 8.98)
+    return True
 
-#m.print()
-print(det(m))
+
+# Generic function to display the
+# matrix. We use it to display
+# both adjoin and inverse. adjoin
+# is integer matrix and inverse
+# is a float.
+def display(A):
+    for i in range(N):
+        for j in range(N):
+            print(A[i][j], end=" ")
+        print()
+
+
+def displays(A):
+    for i in range(N):
+        for j in range(N):
+            print(round(A[i][j], 6), end=" ")
+        print()
+
+
+# Driver program
+
+A = [[5, -2, 2, 7], [1, 0, 0, 3], [-3, 1, 5, 0], [3, -1, -9, 4]]
+adj = [None for _ in range(N)]
+inv = [None for _ in range(N)]
+
+for i in range(N):
+    adj[i] = [None for _ in range(N)]
+    inv[i] = [None for _ in range(N)]
+
+
+print("Input matrix is :")
+display(A)
+
+print("\nThe Adjoint is :")
+adjoint(A, adj)
+display(adj)
+
+print("\nThe Inverse is :")
+if (inverse(A, inv)):
+    displays(inv)
